@@ -14,3 +14,7 @@ https://www.adamantmedia.com/mail-server-postfix-dovecot-spamassassin-on-ubuntu-
 https://www.cyberpunk.rs/mail-server-setup-postfix
 
 https://yiworkdisk.netlify.app/en/linux/install_postfix.html
+
+https://codepre.com/set-up-a-mail-server-on-centos-8-using-postfix-dovecot-mysql-and-roundcube.html
+
+https://www.rosehosting.com/blog/how-to-set-up-a-mail-server-with-postfixadmin-on-debian-11/#Step-5-Install-Postfix

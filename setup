@@ -1,4 +1,5 @@
 0. Install certbot nginx package
+
 apt install certbot python3-certbot-nginx
 certbot -d domain.ro -d mail.domain.ro
 certbot -d www.domain.ro -d mail.domain.ro

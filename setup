@@ -427,3 +427,136 @@ postconf -e "non_smtpd_milters = inet:127.0.0.1:11332"
 8. Restarting Rspamd and Postfix
 systemctl restart rspamd; systemctl restart postfix
 
+
+
+Install and setup Roundcube webmail :
+
+wget https://github.com/roundcube/roundcubemail/releases/download/1.4.11/roundcubemail-1.4.11-complete.tar.gz
+
+tar xvf roundcubemail*
+sudo mv roundcubemail* /var/www/roundcube
+
+sudo apt install php-net-ldap2 php-net-ldap3 php-imagick php7.4-common php7.4-gd php7.4-imap php7.4-json php7.4-curl php7.4-zip php7.4-xml php7.4-mbstring php7.4-bz2 php7.4-intl php7.4-gmp
+sudo apt install php-fpm php-mysql
+sudo apt install composer
+cd /var/www/roundcube
+composer install --no-dev
+sudo chown www-data:www-data temp/ logs/ -R
+
+sudo mysql roundcube < /var/www/roundcube/SQL/mysql.initial.sql
+or 
+sudo mysql roundcube -u roundcubeuser -p < /var/www/html/roundcube/SQL/mysql.initial.sql
+
+root@mail:/var/www/roundcube# sudo mysql -u root
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 105
+Server version: 10.3.31-MariaDB-0ubuntu0.20.04.1 Ubuntu 20.04
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> CREATE DATABASE roundcube DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [(none)]>  CREATE USER roundcubeuser@localhost IDENTIFIED BY 'TUTORIAL_PASSWORD';
+Query OK, 0 rows affected (0.000 sec)
+
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON roundcube.* TO roundcubeuser@localhost;
+Query OK, 0 rows affected (0.000 sec)
+
+MariaDB [(none)]> flush privileges;
+Query OK, 0 rows affected (0.000 sec)
+
+MariaDB [(none)]> quit
+Bye
+root@mail:/var/www/roundcube#
+
+
+
+sudo nano /etc/nginx/conf.d/roundcube.conf
+server {
+  listen 80;
+  listen [::]:80;
+  server_name mail.example.com;
+  root /var/www/roundcube/;
+  index index.php index.html index.htm;
+
+  error_log /var/log/nginx/roundcube.error;
+  access_log /var/log/nginx/roundcube.access;
+
+  location / {
+    try_files $uri $uri/ /index.php;
+  }
+
+  location ~ \.php$ {
+   try_files $uri =404;
+    fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+    fastcgi_index index.php;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    include fastcgi_params;
+  }
+
+  location ~ /.well-known/acme-challenge {
+    allow all;
+  }
+ location ~ ^/(README|INSTALL|LICENSE|CHANGELOG|UPGRADING)$ {
+    deny all;
+  }
+  location ~ ^/(bin|SQL)/ {
+    deny all;
+  }
+ # A long browser cache lifetime can speed up repeat visits to your page
+  location ~* \.(jpg|jpeg|gif|png|webp|svg|woff|woff2|ttf|css|js|ico|xml)$ {
+       access_log        off;
+       log_not_found     off;
+       expires           360d;
+  }
+}
+
+sudo nginx -t
+sudo systemctl reload nginx
+
+
+The IMAP and SMTP section allows you to configure how to receive and submit email. Enter the following values for IMAP.
+
+IMAP host: ssl://mail.example.com port: 993
+SMTP port: tls://mail.example.com port: 587. Note that you must use tls:// as the prefix for port 587. The ssl:// prefix should be used for port 465.
+
+you can scroll down to the Plugins section to enable some plugins. For example, the password plugin, mark as junk plugin, and so on. I enabled all of them. 
+(You can always disable a plugin after installation in the /var/www/roundcube/config/config.inc.php file.)
+
+sudo apt install dovecot-sieve dovecot-managesieved
+sudo apt install dovecot-lmtpd
+
+sudo nano /etc/dovecot/dovecot.conf
+Add lmtp and sieve to the supported protocols.
+protocols = imap lmtp sieve
+
+sudo nano /etc/dovecot/conf.d/10-master.conf
+service lmtp {
+ unix_listener /var/spool/postfix/private/dovecot-lmtp {
+   group = postfix
+   mode = 0600
+   user = postfix
+  }
+}
+
+
+
+
+sudo nano /etc/postfix/main.cf
+Add the following lines at the end of the file
+mailbox_transport = lmtp:unix:private/dovecot-lmtp
+smtputf8_enable = no
+
+
+sudo nano /etc/dovecot/conf.d/15-lda.conf
+
+protocol lda {
+    # Space separated list of plugins to load (default is global mail_plugins).
+    mail_plugins = $mail_plugins sieve
+}
+
+
+sudo systemctl restart postfix dovecot

@@ -226,6 +226,7 @@ systemctl restart dovecot
 
 
 8. Adding Domains and Virtual Users. 
+
 mysql -u root
 msyql>USE mail;
 mysql>INSERT INTO domains (domain) VALUES ('domain.ro');
@@ -234,11 +235,40 @@ mysql>insert into users(email,password) values('me@domain.ro', md5('PASSWORD'));
 mysql>quit;
 
 
+9. Check mail domain, account, alias 
 
+root@domain:/etc/postfix# postmap -q domain.ro mysql:/etc/postfix/mysql_virtual_domains.cf
+domain.ro
+root@domain:/etc/postfix# postmap -q marian@domain.ro mysql:/etc/postfix/mysql_virtual_mailboxes.cf
+domain.ro/marian/
+root@domain:/etc/postfix# postmap -q me@domain.ro mysql:/etc/postfix/mysql_virtual_mailboxes.cf
+domain.ro/me/
+root@domain:/etc/postfix# 
 
+#postfconf new/actual value
+root@mail:/etc/postfix# postconf -n message_size_limit
+message_size_limit = 31457280
+
+#postconf default value 
+root@mail:/etc/postfix# postconf -d message_size_limit
+message_size_limit = 10240000
+root@mail:/etc/postfix#  
   
-  
+#check authentication 
+root@mail:~# testsaslauthd -u user@domain.ro -p PAROLA -f /var/spool/postfix/var/run/saslauthd/mux -s smtp
+0: OK "Success."
+root@mail:~#
+root@mail:~# testsaslauthd -u marian@domain.ro -p BAD_PAROLA -f /var/spool/postfix/var/run/saslauthd/mux -s smtp
+0: NO "authentication failed"
 
+#enable 465 smtp port in /etc/postfix/master.cf
+smtps     inet  n		-		y		-		-		smtpd
+
+#Enable port 587 in postfix vi /etc/postfix/master.cf
+submission inet n - n - - smtpd
+
+#increase the smtp logging by add -v in /etc/postfix/master.cf
+smtp      inet  n       -       y       -       -       smtpd  -v
 
 
 

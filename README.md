@@ -18,3 +18,7 @@ https://yiworkdisk.netlify.app/en/linux/install_postfix.html
 https://codepre.com/set-up-a-mail-server-on-centos-8-using-postfix-dovecot-mysql-and-roundcube.html
 
 https://www.rosehosting.com/blog/how-to-set-up-a-mail-server-with-postfixadmin-on-debian-11/#Step-5-Install-Postfix
+
+https://www.gonscak.sk/?p=643
+
+https://mylinuxtips.info/linuxtipstutorials/setup-mail-server-on-centos7-with-postfix-dovecot-mysql-and-squirrelmail/

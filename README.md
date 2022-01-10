@@ -22,3 +22,5 @@ https://www.rosehosting.com/blog/how-to-set-up-a-mail-server-with-postfixadmin-o
 https://www.gonscak.sk/?p=643
 
 https://mylinuxtips.info/linuxtipstutorials/setup-mail-server-on-centos7-with-postfix-dovecot-mysql-and-squirrelmail/
+
+https://www.linode.com/docs/guides/email-with-postfix-dovecot-and-mysql/#install-ssl-certificate

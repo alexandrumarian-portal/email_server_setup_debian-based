@@ -24,3 +24,7 @@ https://www.gonscak.sk/?p=643
 https://mylinuxtips.info/linuxtipstutorials/setup-mail-server-on-centos7-with-postfix-dovecot-mysql-and-squirrelmail/
 
 https://www.linode.com/docs/guides/email-with-postfix-dovecot-and-mysql/#install-ssl-certificate
+
+https://gist.github.com/Anime4000/59ade3017f1e743069f4e8c6dc032681
+
+https://blog.suenotek.com/post/roundcube-mail-app-and-spf-dkim-dmarc-on-ubuntu-20-04/

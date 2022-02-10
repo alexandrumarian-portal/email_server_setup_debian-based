@@ -561,6 +561,17 @@ service lmtp {
 
 
 
+Configure cron jobs for renewal of certificate and for expunge folders :
+
+crontab -e
+
+MAILTO="USER@DOMAIN.COM"
+@daily certbot renew --quiet && systemctl reload postfix dovecot nginx
+@daily doveadm expunge -A mailbox Trash savedbefore 2w && doveadm expunge -A mailbox Junk savedbefore 2w && doveadm expunge -A mailbox Sent savedbefore 2w
+
+
+
+
 
 sudo nano /etc/postfix/main.cf
 Add the following lines at the end of the file

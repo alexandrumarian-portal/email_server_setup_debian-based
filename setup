@@ -536,6 +536,13 @@ SMTP port: tls://mail.example.com port: 587. Note that you must use tls:// as th
 you can scroll down to the Plugins section to enable some plugins. For example, the password plugin, mark as junk plugin, and so on. I enabled all of them. 
 (You can always disable a plugin after installation in the /var/www/roundcube/config/config.inc.php file.)
 
+
+Once that’s done, click create config button which will create configuration based on the information you entered. 
+You need to copy the configuration and save it as config.inc.php under the /var/www/roundcube/config/ directory.
+Once the config.inc.php file is created, click continue button. In the final step, test your SMTP and IMAP settings 
+by sending a test email and checking IMAP login. Note that you need to enter your full email address in the Sender field when testing SMTP config.
+
+
 sudo apt install dovecot-sieve dovecot-managesieved
 sudo apt install dovecot-lmtpd
 

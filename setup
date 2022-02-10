@@ -443,9 +443,7 @@ cd /var/www/roundcube
 composer install --no-dev
 sudo chown www-data:www-data temp/ logs/ -R
 
-sudo mysql roundcube < /var/www/roundcube/SQL/mysql.initial.sql
-or 
-sudo mysql roundcube -u roundcubeuser -p < /var/www/html/roundcube/SQL/mysql.initial.sql
+
 
 root@mail:/var/www/roundcube# sudo mysql -u root
 Welcome to the MariaDB monitor.  Commands end with ; or \g.
@@ -472,6 +470,14 @@ MariaDB [(none)]> quit
 Bye
 root@mail:/var/www/roundcube#
 
+
+sudo mysql roundcube < /var/www/roundcube/SQL/mysql.initial.sql
+or 
+sudo mysql roundcube -u roundcubeuser -p < /var/www/html/roundcube/SQL/mysql.initial.sql
+
+
+Set timezone in php ini file :
+vim /etc/php/7.4/fpm/php.ini 
 
 
 sudo nano /etc/nginx/conf.d/roundcube.conf

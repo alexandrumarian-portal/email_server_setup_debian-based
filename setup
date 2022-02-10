@@ -491,6 +491,10 @@ server {
   error_log /var/log/nginx/roundcube.error;
   access_log /var/log/nginx/roundcube.access;
 
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/mail.marianc.gq/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/mail.marianc.gq/privkey.pem; # managed by Certbot
+
   location / {
     try_files $uri $uri/ /index.php;
   }

@@ -621,6 +621,146 @@ service bind9 restart
 service postfix restart
 
 
+Installing and Configuring DKIM
+
+apt update && sudo apt install opendkim opendkim-tools
+systemctl enable opendkim
+
+gpasswd -a postfix opendkim
+
+vim /etc/opendkim.conf and Uncomment or add lines as below:
+
+Canonicalization        relaxed/simple
+Mode                    sv
+SubDomains              no
+
+UMask                   007
+
+AutoRestart             yes
+AutoRestartRate         10/1M
+Background              yes
+DNSTimeout              5
+SignatureAlgorithm      rsa-sha256
+
+#OpenDKIM user
+# Remember to add user postfix to group opendkim
+UserID                  opendkim
+
+# Map domains in From addresses to keys used to sign messages
+KeyTable                refile:/etc/opendkim/key.table
+SigningTable            refile:/etc/opendkim/signing.table
+
+# Hosts to ignore when verifying signatures
+ExternalIgnoreList      /etc/opendkim/trusted.hosts
+InternalHosts           /etc/opendkim/trusted.hosts
+
+
+
+mkdir /etc/opendkim
+mkdir /etc/opendkim/keys
+chown -R opendkim:opendkim /etc/opendkim
+chmod go-rw /etc/opendkim/keys
+
+
+vim /etc/opendkim/signing.table
+*@example.com default._domainkey.example.com
+
+nano /etc/opendkim/key.table
+default._domainkey.example.com    example.com:default:/etc/opendkim/keys/example.com/default.private
+
+
+vim /etc/opendkim/trusted.hosts
+127.0.0.1
+localhost
+
+hostname
+example.com
+*.example.com
+
+
+mkdir /etc/opendkim/keys/example.com
+opendkim-genkey -b 2048 -d example.com -D /etc/opendkim/keys/example.com -s default -v
+
+
+Display the public key:
+cat /etc/opendkim/keys/example.com/default.txt
+
+
+default._domainkey	IN	TXT	( "v=DKIM1; h=sha256; k=rsa; "
+	  "p=MIIBIjANBgkqhkiG9xxxxxxxxxdqlBZW527Abv/SAIVP0mE8ZiDdcn6PjrVF48SFxxxxxxxxxxxRtFmq8D1xxxxxxxxxxxxxp96rfX"
+	  "L8YXBCxxxxxxxxxxxxxxxxxxGQEyt3MQVegxxxxxxxxxxxxxxQhEcQIDAQAB" )  ; ----- DKIM key default for domain.com
+
+and add the record to the forward zone config file of bind dns server and increase the serial :) 
+
+
+
+opendkim-testkey -d example.com -s default -vvv
+If you see Key not secure in the command output, don’t panic. This is because DNSSEC isn’t enabled on your domain name. 
+DNSSEC is a security standard for secure DNS query. Most domain names haven’t enabled DNSSEC. 
+There’s absolutely no need to worry about Key not secure. You can continue to follow this guide.
+
+
+Connect Postfix to OpenDKIM
+sudo mkdir /var/spool/postfix/opendkim
+sudo chown opendkim:postfix /var/spool/postfix/opendkim
+
+
+sudo nano /etc/opendkim.conf
+Find the following line:
+Socket    local:/run/opendkim/opendkim.sock
+
+Replace it with the following line:
+Socket    local:/var/spool/postfix/opendkim/opendkim.sock
+
+
+sudo vim /etc/default/opendkim 
+Find the following line.
+SOCKET=local:$RUNDIR/opendkim.sock
+
+Change it to:
+SOCKET="local:/var/spool/postfix/opendkim/opendkim.sock"
+
+
+sudo nano /etc/postfix/main.cf
+Add the following lines at the end of this file, so Postfix will be able to call OpenDKIM via the milter protocol.
+
+# Milter configuration
+milter_default_action = accept
+milter_protocol = 6
+smtpd_milters = local:opendkim/opendkim.sock
+non_smtpd_milters = $smtpd_milters
+
+sudo systemctl restart opendkim postfix
+
+
+Testing Email Score and Placement:
+https://www.mail-tester.com/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

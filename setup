@@ -527,6 +527,8 @@ server {
 sudo nginx -t
 sudo systemctl reload nginx
 
+(you can add "return 301 https://$host$request_uri;" in the nginx config file for implemmenting http2https redirects )
+
 
 The IMAP and SMTP section allows you to configure how to receive and submit email. Enter the following values for IMAP.
 

@@ -28,3 +28,5 @@ https://www.linode.com/docs/guides/email-with-postfix-dovecot-and-mysql/#install
 https://gist.github.com/Anime4000/59ade3017f1e743069f4e8c6dc032681
 
 https://blog.suenotek.com/post/roundcube-mail-app-and-spf-dkim-dmarc-on-ubuntu-20-04/
+
+Check SPF,DMARC,DKIM,PTR records : https://www.appmaildev.com/en/spf

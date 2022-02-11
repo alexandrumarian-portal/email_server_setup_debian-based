@@ -592,7 +592,7 @@ sudo systemctl restart postfix dovecot
 
 
 
-Configure SPF record :
+Configure SPF and DMARC records :
 apt install postfix-policyd-spf-python
 
 
@@ -614,6 +614,7 @@ smtpd_recipient_restrictions =
     
 in the forward bind file, add a TXT record (/etc/bind/forward.domain.com ex.) and increase the bind serial :) :
 marianc.gq.        IN      TXT     "v=spf1 a mx -all"
+_dmarc    IN       TXT     "v=DMARC1; p=none; pct=100; fo=1; rua=mailto:USER@DOMAIN.COM"
 
 
 service bind9 restart

@@ -1,6 +1,6 @@
 0. Install certbot nginx package
 
-```apt install certbot python3-certbot-nginx
+apt install certbot python3-certbot-nginx
 certbot -d domain.ro -d mail.domain.ro
 certbot -d www.domain.ro -d mail.domain.ro
 #extra example
@@ -588,3 +588,39 @@ protocol lda {
 
 
 sudo systemctl restart postfix dovecot
+
+
+
+
+Configure SPF record :
+apt install postfix-policyd-spf-python
+
+
+vim /etc/postfix/master.cf and add at the end the following lines: 
+policyd-spf  unix  -       n       n       -       0       spawn
+    user=policyd-spf argv=/usr/bin/policyd-spf
+    
+    
+    
+vim /etc/postfix/main.cf   and edit the config file as :
+
+policyd-spf_time_limit = 3600
+smtpd_recipient_restrictions =
+   permit_mynetworks,
+   permit_sasl_authenticated,
+   reject_unauth_destination,
+   check_policy_service unix:private/policyd-spf
+
+    
+in the forward bind file, add a TXT record (/etc/bind/forward.domain.com ex.) and increase the bind serial :) :
+marianc.gq.        IN      TXT     "v=spf1 a mx -all"
+
+
+service bind9 restart
+service postfix restart
+
+
+
+
+
+

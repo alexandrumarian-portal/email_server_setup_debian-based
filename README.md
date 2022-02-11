@@ -1,7 +1,7 @@
 # email_server_setup_debian-based
-postfix dovecot mysql setup on debian based distros
+#Postfix Dvecot MySQL setup on Debian based distros (Debian 10,11; Ubuntu 20.04)
 
-Special thanks to the authors of the following tutorials :
+#Special thanks to the authors of the following tutorials :
 ```
 https://www.linuxbabe.com/ubuntu/install-roundcube-webmail-ubuntu-20-04-apache-nginx
 

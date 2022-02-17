@@ -30,7 +30,7 @@ mysql> exit
 ```
 3. Configuring Postfix to communicate with MySql
 ```
-) vim /etc/postfix/mysql_virtual_domains.cf 
+a) vim /etc/postfix/mysql_virtual_domains.cf 
 user = mail_admin
 password = TUTORIAL_PASSWORD
 dbname = mail
@@ -62,3 +62,110 @@ e) Setting the ownership and permissions
 chmod o-rwx /etc/postfix/mysql_virtual_*
 chown root.postfix /etc/postfix/mysql_virtual_*
 ```
+4. Creating a user and group for mail handling
+```
+groupadd -g 5000 vmail
+useradd -g vmail -u 5000 -d /var/vmail -m vmail
+```
+5. Configuring postfix
+```
+postconf -e "myhostname = mail.domain.ro"
+postconf -e "mydestination = mail.domain.ro, localhost, localhost.localdomain"
+postconf -e "mynetworks = 127.0.0.0/8"
+postconf -e "message_size_limit = 31457280"
+postconf -e "virtual_alias_domains ="
+postconf -e "virtual_alias_maps = proxy:mysql:/etc/postfix/mysql_virtual_forwardings.cf, mysql:/etc/postfix/mysql_virtual_email2email.cf"
+postconf -e "virtual_mailbox_domains = proxy:mysql:/etc/postfix/mysql_virtual_domains.cf"
+postconf -e "virtual_mailbox_maps = proxy:mysql:/etc/postfix/mysql_virtual_mailboxes.cf"
+postconf -e "virtual_mailbox_base = /var/vmail"
+postconf -e "virtual_uid_maps = static:5000"
+postconf -e "virtual_gid_maps = static:5000"
+postconf -e "smtpd_sasl_auth_enable = yes"
+postconf -e "broken_sasl_auth_clients = yes"
+postconf -e "smtpd_sasl_authenticated_header = yes"
+postconf -e "smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination"
+postconf -e "smtpd_use_tls = yes"
+postconf -e "smtpd_tls_cert_file = /etc/letsencrypt/live/domain.ro/fullchain.pem"
+postconf -e "smtpd_tls_key_file = /etc/letsencrypt/live/domain.ro/privkey.pem"
+postconf -e "virtual_transport=dovecot"
+postconf -e 'proxy_read_maps = $local_recipient_maps $mydestination $virtual_alias_maps $virtual_alias_domains $virtual_mailbox_maps $virtual_mailbox_domains $relay_recipient_maps $relay_domains $canonical_maps $sender_canonical_maps $recipient_canonical_maps $relocated_maps $transport_maps $mynetworks $virtual_mailbox_limit_maps'
+
+
+vi /etc/postfix/master.cf  - paste : 
+
+submission     inet     n    -    y    -    -    smtpd
+  -o syslog_name=postfix/submission
+  -o smtpd_tls_security_level=encrypt
+  -o smtpd_tls_wrappermode=no
+  -o smtpd_sasl_auth_enable=yes
+  -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_recipient_restrictions=permit_mynetworks,permit_sasl_authenticated,reject
+  -o smtpd_sasl_type=dovecot
+  -o smtpd_sasl_path=private/auth
+  
+smtps     inet  n       -       y       -       -       smtpd
+  -o syslog_name=postfix/smtps
+  -o smtpd_tls_wrappermode=yes
+  -o smtpd_sasl_auth_enable=yes
+  -o smtpd_relay_restrictions=permit_sasl_authenticated,reject
+  -o smtpd_recipient_restrictions=permit_mynetworks,permit_sasl_authenticated,reject
+  -o smtpd_sasl_type=dovecot
+  -o smtpd_sasl_path=private/auth  
+  
+```
+6. Configuring SMTP AUTH (SASLAUTHD and MySql)
+```
+a) Creating a directory where saslauthd will save its information:  
+mkdir -p /var/spool/postfix/var/run/saslauthd
+
+b) Editing the configuration file of saslauthd: vim /etc/default/saslauthd
+START=yes
+DESC="SASL Authentication Daemon"
+NAME="saslauthd"
+MECHANISMS="pam"
+MECH_OPTIONS=""
+THREADS=5
+OPTIONS="-c -m /var/spool/postfix/var/run/saslauthd -r"
+
+c) Creating a new file: vim /etc/pam.d/smtp
+auth required pam_mysql.so user=mail_admin passwd=TUTORIAL_PASSWORD host=127.0.0.1 db=mail table=users usercolumn=email passwdcolumn=password crypt=3
+account sufficient pam_mysql.so user=mail_admin passwd=TUTORIAL_PASSWORD host=127.0.0.1 db=mail table=users usercolumn=email passwdcolumn=password crypt=3
+
+d) vim /etc/postfix/sasl/smtpd.conf
+pwcheck_method: saslauthd 
+mech_list: plain login 
+log_level: 4
+
+e) Setting the permissions
+chmod o-rwx /etc/pam.d/smtp
+chmod o-rwx /etc/postfix/sasl/smtpd.conf
+
+f) Adding the postfix user to the sasl group for group access permissions: 
+usermod  -aG sasl postfix
+
+g) Restarting the services:
+systemctl restart postfix
+systemctl restart saslauthd
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

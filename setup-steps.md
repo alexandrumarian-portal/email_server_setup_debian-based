@@ -274,8 +274,8 @@ smtp      inet  n       -       y       -       -       smtpd  -v
 systemctl restart postfix
 ```
 
-# Amavis Installation Guide
-# All commands are run as root 
+#Amavis Installation Guide
+#All commands are run as root 
 ```
 1. Installing Amavis
 apt update && apt install amavisd-new
@@ -387,8 +387,8 @@ postmap /etc/postfix/rbl_override
 ```
 
 
-# Rspamd Installation Guide
-# All commands are run as root 
+#Rspamd Installation Guide
+#All commands are run as root 
 ```
 1. Installing Redis as storage for non-volatile data and as a cache for volatile data
 apt update && apt install redis-server
@@ -427,7 +427,7 @@ postconf -e "non_smtpd_milters = inet:127.0.0.1:11332"
 systemctl restart rspamd; systemctl restart postfix
 
 ```
-# Install and setup Roundcube webmail :
+#Install and setup Roundcube webmail :
 ```
 wget https://github.com/roundcube/roundcubemail/releases/download/1.4.11/roundcubemail-1.4.11-complete.tar.gz
 
@@ -732,27 +732,3 @@ non_smtpd_milters = $smtpd_milters
 sudo systemctl restart opendkim postfix
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -274,11 +274,10 @@ smtp      inet  n       -       y       -       -       smtpd  -v
 systemctl restart postfix
 ```
 
-#Amavis Installation Guide
-## INSTALLING AMAVISD/CLAMAV AND POSTFIX INTEGRATION ##
+# Amavis Installation Guide
 # All commands are run as root 
 ```
-. Installing Amavis
+1. Installing Amavis
 apt update && apt install amavisd-new
  
 Note: if there's an error set $myhostname in /etc/amavis/conf.d/05-node_id
@@ -388,10 +387,351 @@ postmap /etc/postfix/rbl_override
 ```
 
 
+# Rspamd Installation Guide
+# All commands are run as root 
+```
+1. Installing Redis as storage for non-volatile data and as a cache for volatile data
+apt update && apt install redis-server
+ 
+2. Adding the repository GPG key 
+wget -O- https://rspamd.com/apt-stable/gpg.key | sudo apt-key add -
+ 
+3. Enabling the Rspamd repository
+echo "deb http://rspamd.com/apt-stable/ $(lsb_release -cs) main" | sudo tee -a /etc/apt/sources.list.d/rspamd.list
+ 
+4. Installing Rspamd
+apt update && apt install rspamd
+ 
+5. Configuring the Rspamd normal worker to listen only on localhost interface
+vim /etc/rspamd/local.d/worker-normal.inc
+    bind_socket = "127.0.0.1:11333";
+ 
+6. Enabling the milter protocol to communicate with postfix:
+vim /etc/rspamd/local.d/worker-proxy.inc
+    bind_socket = "127.0.0.1:11332";
+    milter = yes;
+    timeout = 120s;
+    upstream "local" {
+    default = yes;
+    self_scan = yes;
+    }
+ 
+7. Configure postfix to use Rspamd
+postconf -e "milter_protocol = 6"
+postconf -e "milter_mail_macros = i {mail_addr} {client_addr} {client_name} {auth_authen}"
+postconf -e "milter_default_action = accept"
+postconf -e "smtpd_milters = inet:127.0.0.1:11332"
+postconf -e "non_smtpd_milters = inet:127.0.0.1:11332"
+ 
+8. Restarting Rspamd and Postfix
+systemctl restart rspamd; systemctl restart postfix
+
+```
+# Install and setup Roundcube webmail :
+```
+wget https://github.com/roundcube/roundcubemail/releases/download/1.4.11/roundcubemail-1.4.11-complete.tar.gz
+
+tar xvf roundcubemail*
+sudo mv roundcubemail* /var/www/roundcube
+
+sudo apt install php-net-ldap2 php-net-ldap3 php-imagick php7.4-common php7.4-gd php7.4-imap php7.4-json php7.4-curl php7.4-zip php7.4-xml php7.4-mbstring php7.4-bz2 php7.4-intl php7.4-gmp
+sudo apt install php-fpm php-mysql
+sudo apt install composer
+cd /var/www/roundcube
+composer install --no-dev
+sudo chown www-data:www-data temp/ logs/ -R
+
+
+
+root@mail:/var/www/roundcube# sudo mysql -u root
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 105
+Server version: 10.3.31-MariaDB-0ubuntu0.20.04.1 Ubuntu 20.04
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> CREATE DATABASE roundcube DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [(none)]>  CREATE USER roundcubeuser@localhost IDENTIFIED BY 'TUTORIAL_PASSWORD';
+Query OK, 0 rows affected (0.000 sec)
+
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON roundcube.* TO roundcubeuser@localhost;
+Query OK, 0 rows affected (0.000 sec)
+
+MariaDB [(none)]> flush privileges;
+Query OK, 0 rows affected (0.000 sec)
+
+MariaDB [(none)]> quit
+Bye
+root@mail:/var/www/roundcube#
+
+
+sudo mysql roundcube < /var/www/roundcube/SQL/mysql.initial.sql
+or 
+sudo mysql roundcube -u roundcubeuser -p < /var/www/html/roundcube/SQL/mysql.initial.sql
+
+
+Set timezone in php ini file :
+vim /etc/php/7.4/fpm/php.ini 
+
+
+sudo nano /etc/nginx/conf.d/roundcube.conf
+server {
+  listen 80;
+  listen [::]:80;
+  server_name mail.example.com;
+  root /var/www/roundcube/;
+  index index.php index.html index.htm;
+
+  error_log /var/log/nginx/roundcube.error;
+  access_log /var/log/nginx/roundcube.access;
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/mail.marianc.gq/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/mail.marianc.gq/privkey.pem; # managed by Certbot
+
+  location / {
+    try_files $uri $uri/ /index.php;
+  }
+
+  location ~ \.php$ {
+   try_files $uri =404;
+    fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+    fastcgi_index index.php;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    include fastcgi_params;
+  }
+
+  location ~ /.well-known/acme-challenge {
+    allow all;
+  }
+ location ~ ^/(README|INSTALL|LICENSE|CHANGELOG|UPGRADING)$ {
+    deny all;
+  }
+  location ~ ^/(bin|SQL)/ {
+    deny all;
+  }
+ # A long browser cache lifetime can speed up repeat visits to your page
+  location ~* \.(jpg|jpeg|gif|png|webp|svg|woff|woff2|ttf|css|js|ico|xml)$ {
+       access_log        off;
+       log_not_found     off;
+       expires           360d;
+  }
+}
+
+sudo nginx -t
+sudo systemctl reload nginx
+
+(you can add "return 301 https://$host$request_uri;" in the nginx config file for implemmenting http2https redirects )
+
+
+The IMAP and SMTP section allows you to configure how to receive and submit email. Enter the following values for IMAP.
+
+IMAP host: ssl://mail.example.com port: 993
+SMTP port: tls://mail.example.com port: 587. Note that you must use tls:// as the prefix for port 587. The ssl:// prefix should be used for port 465.
+
+you can scroll down to the Plugins section to enable some plugins. For example, the password plugin, mark as junk plugin, and so on. I enabled all of them. 
+(You can always disable a plugin after installation in the /var/www/roundcube/config/config.inc.php file.)
+
+
+Once that’s done, click create config button which will create configuration based on the information you entered. 
+You need to copy the configuration and save it as config.inc.php under the /var/www/roundcube/config/ directory.
+Once the config.inc.php file is created, click continue button. In the final step, test your SMTP and IMAP settings 
+by sending a test email and checking IMAP login. Note that you need to enter your full email address in the Sender field when testing SMTP config.
+
+
+sudo apt install dovecot-sieve dovecot-managesieved
+sudo apt install dovecot-lmtpd
+
+sudo nano /etc/dovecot/dovecot.conf
+Add lmtp and sieve to the supported protocols.
+protocols = imap lmtp sieve
+
+sudo nano /etc/dovecot/conf.d/10-master.conf
+service lmtp {
+ unix_listener /var/spool/postfix/private/dovecot-lmtp {
+   group = postfix
+   mode = 0600
+   user = postfix
+  }
+}
+
+
+
+Configure cron jobs for renewal of certificate and for expunge folders :
+
+crontab -e
+
+MAILTO="USER@DOMAIN.COM"
+@daily certbot renew --quiet && systemctl reload postfix dovecot nginx
+@daily doveadm expunge -A mailbox Trash savedbefore 2w && doveadm expunge -A mailbox Junk savedbefore 2w && doveadm expunge -A mailbox Sent savedbefore 2w
 
 
 
 
+
+sudo nano /etc/postfix/main.cf
+Add the following lines at the end of the file
+mailbox_transport = lmtp:unix:private/dovecot-lmtp
+smtputf8_enable = no
+
+
+sudo nano /etc/dovecot/conf.d/15-lda.conf
+
+protocol lda {
+    # Space separated list of plugins to load (default is global mail_plugins).
+    mail_plugins = $mail_plugins sieve
+}
+
+
+sudo systemctl restart postfix dovecot
+
+```
+#Configure SPF, DKIM and DMARC records :
+```
+apt install postfix-policyd-spf-python
+
+
+vim /etc/postfix/master.cf and add at the end the following lines: 
+policyd-spf  unix  -       n       n       -       0       spawn
+    user=policyd-spf argv=/usr/bin/policyd-spf
+    
+    
+    
+vim /etc/postfix/main.cf   and edit the config file as :
+
+policyd-spf_time_limit = 3600
+smtpd_recipient_restrictions =
+   permit_mynetworks,
+   permit_sasl_authenticated,
+   reject_unauth_destination,
+   check_policy_service unix:private/policyd-spf
+
+    
+in the forward bind file, add a TXT record (/etc/bind/forward.domain.com ex.) and increase the bind serial :) :
+marianc.gq.        IN      TXT     "v=spf1 a mx -all"
+_dmarc    IN       TXT     "v=DMARC1; p=none; pct=100; fo=1; rua=mailto:USER@DOMAIN.COM"
+
+
+service bind9 restart
+service postfix restart
+
+
+Installing and Configuring DKIM
+
+apt update && sudo apt install opendkim opendkim-tools
+systemctl enable opendkim
+
+gpasswd -a postfix opendkim
+
+vim /etc/opendkim.conf and Uncomment or add lines as below:
+
+Canonicalization        relaxed/simple
+Mode                    sv
+SubDomains              no
+
+UMask                   007
+
+AutoRestart             yes
+AutoRestartRate         10/1M
+Background              yes
+DNSTimeout              5
+SignatureAlgorithm      rsa-sha256
+
+#OpenDKIM user
+# Remember to add user postfix to group opendkim
+UserID                  opendkim
+
+# Map domains in From addresses to keys used to sign messages
+KeyTable                refile:/etc/opendkim/key.table
+SigningTable            refile:/etc/opendkim/signing.table
+
+# Hosts to ignore when verifying signatures
+ExternalIgnoreList      /etc/opendkim/trusted.hosts
+InternalHosts           /etc/opendkim/trusted.hosts
+
+
+
+mkdir /etc/opendkim
+mkdir /etc/opendkim/keys
+chown -R opendkim:opendkim /etc/opendkim
+chmod go-rw /etc/opendkim/keys
+
+
+vim /etc/opendkim/signing.table
+*@example.com default._domainkey.example.com
+
+nano /etc/opendkim/key.table
+default._domainkey.example.com    example.com:default:/etc/opendkim/keys/example.com/default.private
+
+
+vim /etc/opendkim/trusted.hosts
+127.0.0.1
+localhost
+
+hostname
+example.com
+*.example.com
+
+
+mkdir /etc/opendkim/keys/example.com
+opendkim-genkey -b 2048 -d example.com -D /etc/opendkim/keys/example.com -s default -v
+
+
+Display the public key:
+cat /etc/opendkim/keys/example.com/default.txt
+
+
+default._domainkey	IN	TXT	( "v=DKIM1; h=sha256; k=rsa; "
+	  "p=MIIBIjANBgkqhkiG9xxxxxxxxxdqlBZW527Abv/SAIVP0mE8ZiDdcn6PjrVF48SFxxxxxxxxxxxRtFmq8D1xxxxxxxxxxxxxp96rfX"
+	  "L8YXBCxxxxxxxxxxxxxxxxxxGQEyt3MQVegxxxxxxxxxxxxxxQhEcQIDAQAB" )  ; ----- DKIM key default for domain.com
+
+and add the record to the forward zone config file of bind dns server and increase the serial :) 
+
+
+
+opendkim-testkey -d example.com -s default -vvv
+If you see Key not secure in the command output, don’t panic. This is because DNSSEC isn’t enabled on your domain name. 
+DNSSEC is a security standard for secure DNS query. Most domain names haven’t enabled DNSSEC. 
+There’s absolutely no need to worry about Key not secure. You can continue to follow this guide.
+
+
+Connect Postfix to OpenDKIM
+sudo mkdir /var/spool/postfix/opendkim
+sudo chown opendkim:postfix /var/spool/postfix/opendkim
+
+
+sudo nano /etc/opendkim.conf
+Find the following line:
+Socket    local:/run/opendkim/opendkim.sock
+
+Replace it with the following line:
+Socket    local:/var/spool/postfix/opendkim/opendkim.sock
+
+
+sudo vim /etc/default/opendkim 
+Find the following line.
+SOCKET=local:$RUNDIR/opendkim.sock
+
+Change it to:
+SOCKET="local:/var/spool/postfix/opendkim/opendkim.sock"
+
+
+sudo nano /etc/postfix/main.cf
+Add the following lines at the end of this file, so Postfix will be able to call OpenDKIM via the milter protocol.
+
+# Milter configuration
+milter_default_action = accept
+milter_protocol = 6
+smtpd_milters = local:opendkim/opendkim.sock
+non_smtpd_milters = $smtpd_milters
+
+sudo systemctl restart opendkim postfix
+
+```
 
 
 

@@ -147,6 +147,144 @@ g) Restarting the services:
 systemctl restart postfix
 systemctl restart saslauthd
 ```
+7. Configuring Dovecot (POP3/IMAP)
+```
+a) At the end of /etc/postfix/master.cf add:
+dovecot   unix  -       n       n       -       -       pipe
+    flags=DRhu user=vmail:vmail argv=/usr/lib/dovecot/deliver -d ${recipient}
+
+b) Edit Dovecot config file: vim /etc/dovecot/dovecot.conf
+log_timestamp = "%Y-%m-%d %H:%M:%S "
+mail_location = maildir:/var/vmail/%d/%n/Maildir
+managesieve_notify_capability = mailto
+managesieve_sieve_capability = fileinto reject envelope encoded-character vacation subaddress comparator-i;ascii-numeric relational regex imap4flags copy include variables body enotify environment mailbox date
+namespace {
+  inbox = yes
+  location = 
+  prefix = INBOX.
+  separator = .
+  type = private
+}
+passdb {
+  args = /etc/dovecot/dovecot-sql.conf
+  driver = sql
+}
+protocols = imap pop3
+
+service auth {
+  unix_listener /var/spool/postfix/private/auth {
+    group = postfix
+    mode = 0660
+    user = postfix
+  }
+  unix_listener auth-master {
+    mode = 0600
+    user = vmail
+  }
+  user = root
+}
+
+userdb {
+  args = uid=5000 gid=5000 home=/var/vmail/%d/%n allow_all_users=yes
+  driver = static
+}
+
+protocol lda {
+  auth_socket_path = /var/run/dovecot/auth-master
+  log_path = /var/vmail/dovecot-deliver.log
+  mail_plugins = sieve
+  postmaster_address = postmaster@example.com
+}
+
+protocol pop3 {
+  pop3_uidl_format = %08Xu%08Xv
+}
+
+service stats {
+  unix_listener stats-reader {
+    user = dovecot
+    group = vmail
+    mode = 0660
+  }
+  unix_listener stats-writer {
+    user = dovecot
+    group = vmail
+    mode = 0660
+  }
+}
+
+ssl = yes
+ssl_cert = </etc/letsencrypt/live/domain.ro/fullchain.pem
+ssl_key = </etc/letsencrypt/live/domain.ro/privkey.pem
+
+c) vim /etc/dovecot/dovecot-sql.conf
+driver = mysql
+connect = host=127.0.0.1 dbname=mail user=mail_admin password=TUTORIAL_PASSWORD
+default_pass_scheme = PLAIN-MD5
+password_query = SELECT email as user, password FROM users WHERE email='%u';
+
+d) Restart Dovecot
+systemctl restart dovecot
+```
+8. Adding Domains and Virtual Users. 
+```
+mysql -u root
+msyql>USE mail;
+mysql>INSERT INTO domains (domain) VALUES ('domain.ro');
+mysql>insert into users(email,password) values('marian@domain.ro', md5('PASSWORD'));
+mysql>insert into users(email,password) values('me@domain.ro', md5('PASSWORD'));
+mysql>quit;
+```
+9. Check mail domain, account, alias 
+```
+root@domain:/etc/postfix# postmap -q domain.ro mysql:/etc/postfix/mysql_virtual_domains.cf
+domain.ro
+root@domain:/etc/postfix# postmap -q marian@domain.ro mysql:/etc/postfix/mysql_virtual_mailboxes.cf
+domain.ro/marian/
+root@domain:/etc/postfix# postmap -q me@domain.ro mysql:/etc/postfix/mysql_virtual_mailboxes.cf
+domain.ro/me/
+root@domain:/etc/postfix# 
+
+#postfconf new/actual value
+root@mail:/etc/postfix# postconf -n message_size_limit
+message_size_limit = 31457280
+
+#postconf default value 
+root@mail:/etc/postfix# postconf -d message_size_limit
+message_size_limit = 10240000
+root@mail:/etc/postfix#  
+  
+#check authentication 
+root@mail:~# testsaslauthd -u user@domain.ro -p PAROLA -f /var/spool/postfix/var/run/saslauthd/mux -s smtp
+0: OK "Success."
+root@mail:~#
+root@mail:~# testsaslauthd -u marian@domain.ro -p BAD_PAROLA -f /var/spool/postfix/var/run/saslauthd/mux -s smtp
+0: NO "authentication failed"
+
+#enable 465 smtp port in /etc/postfix/master.cf
+smtps     inet  n		-		y		-		-		smtpd
+
+#Enable port 587 in postfix vi /etc/postfix/master.cf
+submission inet n - n - - smtpd
+
+#increase the smtp logging by add -v in /etc/postfix/master.cf
+smtp      inet  n       -       y       -       -       smtpd  -v
+
+
+systemctl restart postfix
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

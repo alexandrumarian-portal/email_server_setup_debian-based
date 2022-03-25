@@ -560,6 +560,30 @@ service lmtp {
 }
 
 
+Edit the Dovecot main configuration file.
+sudo nano /etc/dovecot/dovecot.conf
+Add lmtp and sieve to the supported protocols:
+protocols = imap lmtp sieve
+
+Then edit the Dovecot 10-master.conf file.
+sudo nano /etc/dovecot/conf.d/10-master.conf
+Change the lmtp service definition to the following.
+service lmtp {
+ unix_listener /var/spool/postfix/private/dovecot-lmtp {
+   group = postfix
+   mode = 0600
+   user = postfix
+  }
+}
+
+Next, edit the Postfix main configuration file.
+sudo nano /etc/postfix/main.cf
+Add the following lines at the end of the file. The first line tells Postfix to deliver emails to local message store via the dovecot LMTP server. The second line disables SMTPUTF8 in Postfix, because Dovecot-LMTP doesn’t support this email extension:
+
+mailbox_transport = lmtp:unix:private/dovecot-lmtp
+smtputf8_enable = no
+
+sudo systemctl restart postfix dovecot
 
 Configure cron jobs for renewal of certificate and for expunge folders :
 

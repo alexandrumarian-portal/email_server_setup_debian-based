@@ -645,6 +645,13 @@ smtpd_recipient_restrictions =
 in the forward bind file, add a TXT record (/etc/bind/forward.domain.com ex.) and increase the bind serial :) :
 marianc.gq.        IN      TXT     "v=spf1 a mx -all"
 _dmarc    IN       TXT     "v=DMARC1; p=none; pct=100; fo=1; rua=mailto:USER@DOMAIN.COM"
+(please expect to receive emails from google,yahoo regarding your status)
+
+alernatively, you can use the following if you do not want reports :
+@	IN	TXT		"v=spf1 a mx ip4:62.77.157.249 -all"
+_dmarc	IN	TXT		"v=DMARC1; p=quarantine; pct=100"
+
+
 
 
 service bind9 restart

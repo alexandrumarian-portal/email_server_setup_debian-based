@@ -648,7 +648,7 @@ _dmarc    IN       TXT     "v=DMARC1; p=none; pct=100; fo=1; rua=mailto:USER@DOM
 (please expect to receive emails from google,yahoo regarding your status)
 
 alernatively, you can use the following if you do not want reports :
-@	IN	TXT		"v=spf1 a mx ip4:62.77.157.249 -all"
+@	IN	TXT		"v=spf1 a mx ip4:xxx.xxx.xxx.xxx -all"
 _dmarc	IN	TXT		"v=DMARC1; p=quarantine; pct=100"
 
 

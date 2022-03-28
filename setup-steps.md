@@ -614,7 +614,14 @@ protocol lda {
 sudo systemctl restart postfix dovecot
 
 ```
+ 
 #Configure SPF, DKIM and DMARC records :
+```
+    SPF to tell the world which addresses have the right send your emails
+    MX to tell the world which addresses will receive the emails and in which order
+    DKIM (a public key) to allow recipients to check your emails really comes from your servers (signed used a private key)
+    DMARC to tell recipient what to do with mails not respecting SPF
+```
 ```
 apt install postfix-policyd-spf-python
 

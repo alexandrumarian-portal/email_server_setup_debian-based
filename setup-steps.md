@@ -770,3 +770,166 @@ non_smtpd_milters = $smtpd_milters
 sudo systemctl restart opendkim postfix
 
 ```
+
+Useful bash scripts :
+
+
+```
+cat << 'EOF' > /usr/local/bin/add_domain
+#!/bin/bash
+usage () {
+    echo "Usage: add_domain <domain_name>"
+}
+ 
+if [ $# -ne 1 ] ; then
+    usage
+    exit 1
+fi
+ 
+if [ -z "$MYSQL_PWD" ] ; then
+    OPTION="-p"
+else
+    OPTION=""
+fi
+ 
+/usr/bin/mysql -u postfix db_postfix $OPTION -e "INSERT INTO db_postfix.virtual_domains (name) VALUES ('$1');"
+EOF
+```
+```
+cat << 'EOF' > /usr/local/bin/add_user
+#!/bin/bash
+if [ $# -ne 2 ] ; then
+    echo "Usage: add_user <e-mail> <password>"
+    exit 1
+fi
+ 
+if [ -z "$MYSQL_PWD" ] ; then
+    OPTION="-p"
+else
+    OPTION=""
+fi
+regex="^[a-z0-9!#\$%&'*+/=?^_\`{|}~-]+(\.[a-z0-9!#$%&'*+/=?^_\`{|}~-]+)*@([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?\$"
+ 
+if [[ $1 =~ $regex ]] ; then
+    DOMAIN=`echo $1 | cut -d'@' -f2`
+else
+    echo "Not a valid e-mail address."
+    exit 1
+fi
+ID=$(/usr/bin/mysql -u postfix db_postfix -s $OPTION -N -e "SELECT id from db_postfix.virtual_domains WHERE NAME='$DOMAIN';")
+if [ -z "$ID" ] ; then
+    echo "The domain $DOMAIN is missing. Use add_domain $DOMAIN first."
+else
+   /usr/bin/mysql -u postfix db_postfix $OPTION -e "INSERT INTO db_postfix.virtual_users (domain_id, email, password) VALUES ($ID, '$1', ENCRYPT('$2', CONCAT('\$6\$', SUBSTRING(SHA(RAND()), -16))));"
+fi
+EOF
+```
+```
+cat << 'EOF' > /usr/local/bin/ls_domains
+#!/bin/bash
+if [ -z "$MYSQL_PWD" ] ; then
+    OPTION="-p"
+else
+    OPTION=""
+fi
+/usr/bin/mysql -u postfix db_postfix $OPTION -e "SELECT * FROM virtual_domains;"
+EOF
+```
+```
+cat << 'EOF' > /usr/local/bin/ls_users
+#!/bin/bash
+ 
+if [ -z "$MYSQL_PWD" ] ; then
+    OPTION="-p"
+else
+    OPTION=""
+fi
+ 
+/usr/bin/mysql -u postfix db_postfix $OPTION -e "SELECT * FROM virtual_users;"
+ 
+EOF
+```
+```
+cat << 'EOF' > /usr/local/bin/rmall_domains
+#!/bin/bash
+if [ -z "$MYSQL_PWD" ] ; then
+    OPTION="-p"
+else
+    OPTION=""
+fi
+ 
+while true; do
+    read -p "All domain records will be deleted. Please confirm [yn] " yn
+    case $yn in
+        [Yy]* ) /usr/bin/mysql -u postfix db_postfix $OPTION -e "DELETE FROM db_postfix.virtual_domains"; break;;
+        [Nn]* ) exit;;
+        * ) echo "Answer yes(y) or no(n).";;
+    esac
+done
+EOF
+```
+```
+cat << 'EOF' > /usr/local/bin/rmall_users
+#!/bin/bash
+if [ -z "$MYSQL_PWD" ] ; then
+    OPTION="-p"
+else
+    OPTION=""
+fi
+ 
+while true; do
+    read -p "All user records will be deleted. Please confirm [yn] " yn
+    case $yn in
+        [Yy]* ) /usr/bin/mysql -u postfix db_postfix $OPTION -e "DELETE FROM db_postfix.virtual_users"; break;;
+        [Nn]* ) exit;;
+        * ) echo "Answer yes(y) or no(n).";;
+    esac
+done
+ 
+EOF
+```
+```
+cat << 'EOF' > /usr/local/bin/rm_domain
+#!/bin/bash
+if [ $# -ne 1 ]
+  then
+    echo "Usage: rm_domain <domain_name>"
+    exit
+fi
+if [ -z "$MYSQL_PWD" ] ; then
+    OPTION="-p"
+else
+    OPTION=""
+fi
+ 
+/usr/bin/mysql -u postfix db_postfix $OPTION -e "DELETE FROM db_postfix.virtual_domains WHERE name = '$1';"
+ 
+EOF
+```
+```
+cat << 'EOF' > /usr/local/bin/rm_user
+#!/bin/bash
+if [ $# -ne 1 ]
+  then
+    echo "Usage: rm_user <e-mail>"
+    exit
+fi
+if [ -z "$MYSQL_PWD" ] ; then
+    OPTION="-p"
+else
+    OPTION=""
+fi
+ 
+/usr/bin/mysql -u postfix db_postfix $OPTION -e "DELETE FROM db_postfix.virtual_users WHERE email = '$1';"
+EOF
+```
+```
+cd /usr/local/bin
+chmod +x add_domain ls_domains rmall_domains rm_domain add_user ls_users rmall_users rm_user
+export MYSQL_PWD=pwd_for_postfix_user
+add_domain cloudranger.live
+add_user klimenta@cloudranger.live some_pwd
+
+```
+
+

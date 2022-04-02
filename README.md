@@ -40,6 +40,8 @@ https://pestmeester.nl/index.html#10.0
 
 https://jackstromberg.com/2020/01/setting-up-an-email-server-on-a-raspberrypi-postfix-dovecot-mariadb-roundcube/
 
+https://blog.andreev.it/?p=6425#MySQL
+
 ```
 Check SPF,DMARC,DKIM,PTR records : 
 ```

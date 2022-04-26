@@ -42,6 +42,8 @@ https://jackstromberg.com/2020/01/setting-up-an-email-server-on-a-raspberrypi-po
 
 https://blog.andreev.it/?p=6425#MySQL
 
+https://linuxize.com/post/set-up-an-email-server-with-postfixadmin/
+
 ```
 Check SPF,DMARC,DKIM,PTR records : 
 ```

@@ -46,6 +46,10 @@ https://linuxize.com/post/set-up-an-email-server-with-postfixadmin/
 
 https://github.com/postfixadmin/postfixadmin/blob/master/INSTALL.TXT
 
+https://github.com/mailserver2/mailserver#dns-setup
+
+https://github.com/aqeltech/Dockerised-GUI-Mailserver
+
 ```
 Check SPF,DMARC,DKIM,PTR records : 
 ```

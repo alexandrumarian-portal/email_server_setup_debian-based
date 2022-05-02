@@ -44,6 +44,8 @@ https://blog.andreev.it/?p=6425#MySQL
 
 https://linuxize.com/post/set-up-an-email-server-with-postfixadmin/
 
+https://github.com/postfixadmin/postfixadmin/blob/master/INSTALL.TXT
+
 ```
 Check SPF,DMARC,DKIM,PTR records : 
 ```

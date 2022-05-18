@@ -543,6 +543,14 @@ Once the config.inc.php file is created, click continue button. In the final ste
 by sending a test email and checking IMAP login. Note that you need to enter your full email address in the Sender field when testing SMTP config.
 
 
+How to Upgrade Roundcube
+wget https://github.com/roundcube/roundcubemail/releases/download/1.5.0/roundcubemail-1.5.0-complete.tar.gz
+tar xvf roundcubemail-1.5.0-complete.tar.gz
+chown www-data:www-data roundcubemail-1.5.0/ -R
+roundcubemail-1.5.0/bin/installto.sh /var/www/roundcube/
+
+
+
 sudo apt install dovecot-sieve dovecot-managesieved
 sudo apt install dovecot-lmtpd
 

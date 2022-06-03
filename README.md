@@ -12,6 +12,8 @@ https://www.linuxbabe.com/mail-server/setup-basic-postfix-mail-sever-ubuntu
 
 https://kb.linuxlove.xyz/mail-server-spf-records.html
 
+https://linuxloser.wordpress.com/postfix/
+
 https://www.adamantmedia.com/mail-server-postfix-dovecot-spamassassin-on-ubuntu-20-04/#setup-mysql-database
 
 https://www.cyberpunk.rs/mail-server-setup-postfix
